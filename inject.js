@@ -1,6 +1,7 @@
 function inject () {
   const modal = document.createElement('div')
   const backdrop = document.createElement('div')
+  const logoutButton = document.createElement('div')
   modal.id = 'weekly-food-modal'
   modal.style.cssText = `
     position: absolute;
@@ -31,6 +32,20 @@ function inject () {
     width: 100%;
     height: 100%;
     filter: blur(4px);
+  `
+  logoutButton.style.cssText = `
+    color: white;
+    top: 10px;
+    right: 10px;
+    font-size: 18px;
+    font-family: 'Roboto Slab', serif;
+    padding: 10px;
+    margin: 20px;
+    cursor: pointer;
+    margin: auto;
+    width: 100%;
+    text-align: center;
+    flex-direction: row;
   `
 
   const $descriptionsTable = document.querySelector('table#grdProductos')
@@ -83,25 +98,29 @@ function inject () {
     .join('')
 
   modal.innerHTML = modalContent
+  logoutButton.innerHTML = `
+    <p onclick="location.href='/logout'" style="border: 1px solid #eee; border-radius: 4px; display: inline-block; padding: 20px;">
+      Logout
+    </p>
+  `
+  modal.appendChild(logoutButton)
   document.body.appendChild(backdrop)
   document.body.appendChild(modal)
-  const $modal = document.querySelector('#weekly-food-modal')
-  const $backdrop = document.querySelector('#weekly-food-backdrop')
   const $body = document.querySelector('body')
   const $form = document.querySelector('form')
 
   // Add key binding.
   document.body.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return
-    if ($modal.style.display === 'none') {
-      $modal.style.display = 'flex'
-      $backdrop.style.display = 'block'
+    if (modal.style.display === 'none') {
+      modal.style.display = 'flex'
+      backdrop.style.display = 'block'
       $body.style.background = 'black'
       $form.style.display = 'none'
       $descriptionsTable.style.display = 'none'
     } else {
-      $modal.style.display = 'none'
-      $backdrop.style.display = 'none'
+      modal.style.display = 'none'
+      backdrop.style.display = 'none'
       $body.style.background = 'white'
       $form.style.display = 'block'
       $descriptionsTable.style.display = 'block'

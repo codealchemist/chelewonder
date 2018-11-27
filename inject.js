@@ -41,7 +41,6 @@ function inject () {
     font-family: 'Roboto Slab', serif;
     padding: 10px;
     margin: 20px;
-    cursor: pointer;
     margin: auto;
     width: 100%;
     text-align: center;
@@ -99,7 +98,7 @@ function inject () {
 
   modal.innerHTML = modalContent
   logoutButton.innerHTML = `
-    <p onclick="location.href='/logout'" style="border: 1px solid #eee; border-radius: 4px; display: inline-block; padding: 20px;">
+    <p onclick="location.href='/logout'" style="border: 1px solid #eee; border-radius: 4px; display: inline-block; padding: 20px; cursor: pointer;">
       Logout
     </p>
   `

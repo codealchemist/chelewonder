@@ -4,7 +4,10 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const cookieParser = require('cookie-parser')
 const inject = require('./inject')
+const login = require('./login')
 const cookieSession = require('cookie-session')
+const fs = require('fs')
+const injectLogin = fs.readFileSync('./login.css')
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -13,13 +16,15 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
 app.use(express.static('static'))
 
-app.use(cookieSession({
-  name: 'session',
-  keys: ['secret1', 'secret2'],
+app.use(
+  cookieSession({
+    name: 'session',
+    keys: ['secret1', 'secret2'],
 
-  // Cookie Options
-  maxAge: 24 * 60 * 60 * 1000 * 7 // 7 days
-}))
+    // Cookie Options
+    maxAge: 24 * 60 * 60 * 1000 * 7 // 7 days
+  })
+)
 
 function isLoggedIn (req) {
   return req.session && req.session.wonderfoodSessionId
@@ -43,24 +48,28 @@ app.get('/', (req, res) => {
 
   const jar = buildCookieJar(req)
 
-  request({
-    url: 'http://w1131323.ferozo.com/wonderfood/frmAltaProductos.aspx',
-    jar
-  }, (err, response, body) => {
-    // this is the product descriptions body
-    const $ = cheerio.load(body)
-    const $descriptionsTable = $('table')
-    request({
-      url: 'http://w1131323.ferozo.com/wonderfood/frmAltaPedidos.aspx',
+  request(
+    {
+      url: 'http://w1131323.ferozo.com/wonderfood/frmAltaProductos.aspx',
       jar
     },
-      (err, response, body) => {
-        // this is the selected food list
-        const htmlString = render(body, $descriptionsTable)
-        res.send(htmlString)
-      }
-    )
-  })
+    (err, response, body) => {
+      // this is the product descriptions body
+      const $ = cheerio.load(body)
+      const $descriptionsTable = $('table')
+      request(
+        {
+          url: 'http://w1131323.ferozo.com/wonderfood/frmAltaPedidos.aspx',
+          jar
+        },
+        (err, response, body) => {
+          // this is the selected food list
+          const htmlString = render(body, $descriptionsTable)
+          res.send(htmlString)
+        }
+      )
+    }
+  )
 })
 
 app.get('/Styles/:file', (req, res) => {
@@ -77,11 +86,12 @@ app.get('/login', (req, res) => {
     return
   }
 
-  request.get({
-    url: 'http://w1131323.ferozo.com/wonderfood/Login.aspx'
-  },
+  request.get(
+    {
+      url: 'http://w1131323.ferozo.com/wonderfood/Login.aspx'
+    },
     (err, response, body) => {
-      const htmlString = render(body)
+      const htmlString = renderLogin(body)
       res.send(htmlString)
     }
   )
@@ -89,23 +99,25 @@ app.get('/login', (req, res) => {
 
 app.get('/logout', (req, res) => {
   req.session = null
-  res.send('<div>Gracias, vuelva prontos! 👋</div>' +
-    '<script>' +
-    ' setTimeout(() => {' +
-    '   document.location.href = \'/\'' +
-    ' }, 1000)' +
-    '</script>'
+  res.send(
+    '<div>Gracias, vuelva prontos! 👋</div>' +
+      '<script>' +
+      ' setTimeout(() => {' +
+      "   document.location.href = '/'" +
+      ' }, 1000)' +
+      '</script>'
   )
 })
 
 app.post('/Login.aspx', (req, res) => {
   const jar = buildCookieJar(req)
 
-  request.post({
-    url: 'http://w1131323.ferozo.com/wonderfood/Login.aspx',
-    form: req.body,
-    jar
-  },
+  request.post(
+    {
+      url: 'http://w1131323.ferozo.com/wonderfood/Login.aspx',
+      form: req.body,
+      jar
+    },
     (err, response, body) => {
       req.session.wonderfoodSessionId = jar.getCookieString('http://w1131323.ferozo.com/')
 
@@ -114,15 +126,23 @@ app.post('/Login.aspx', (req, res) => {
   )
 })
 
+function addFont ($) {
+  $('head').append(`
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimal-ui" />
+      <style>
+        @import url('https://fonts.googleapis.com/css?family=Roboto+Slab|Lobster');
+      </style>
+    `)
+}
+
+function setTitle ($, title = 'CheleWonder ;)') {
+  $('title').text(title)
+}
+
 function render (body, $descriptionsTable) {
   const $ = cheerio.load(body)
-  $('head').append(`
-          <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimal-ui" />
-            <style>
-              @import url('https://fonts.googleapis.com/css?family=Roboto+Slab');
-            </style>
-          `)
-  $('title').text('CheleWonder ;)')
+  addFont($)
+  setTitle($)
   if ($descriptionsTable) {
     $('body').append($descriptionsTable)
   }
@@ -130,4 +150,15 @@ function render (body, $descriptionsTable) {
   return $.html()
 }
 
-app.listen(port)
+function renderLogin (body) {
+  const $ = cheerio.load(body)
+  addFont($)
+  setTitle($)
+  $('body').append(`<script>(${login.toString()})()</script>`)
+  $('head').append(`<style>${injectLogin.toString()}</style>`)
+  return $.html()
+}
+
+app.listen(port, () => {
+  console.log(`CheleWonder listening on http://localhost:${port}`)
+})
